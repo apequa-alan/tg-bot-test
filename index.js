@@ -1,76 +1,102 @@
-const TelegramBot = require('node-telegram-bot-api');
+const { Telegraf } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
 
-const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w'
+const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w';
+const webAppUrl = 'https://tgminiappstoreapp.web.app';
 
-const bot = new TelegramBot(token, { polling: true,  });
-const webAppUrl = 'https://tgminiappstoreapp.web.app'
+const bot = new Telegraf(token);
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
+// Обработчик команды /start
+bot.start(async (ctx) => {
+    const chatId = ctx.chat.id;
 
-    if(text === '/start') {
-        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполни форму', {
-            reply_markup: {
-                keyboard: [
-                    [{text: 'Заполнить форму', web_app: {url: webAppUrl + '/form'}}]
-                ]
-            }
-        })
+    // Сообщение с кнопкой для формы
+    await ctx.reply('Ниже появится кнопка, заполни форму', {
+        reply_markup: {
+            keyboard: [
+                [{ text: 'Заполнить форму', web_app: { url: `${webAppUrl}/form` } }]
+            ],
+        },
+    });
 
-        await bot.sendMessage(chatId, 'Заходи в наш интернет магазин по кнопке ниже', {
-            reply_markup: {
-                inline_keyboard: [
-                    [{text: 'Сделать заказ', web_app: {url: webAppUrl}}]
-                ]
-            }
-        })
-    }
+    // Сообщение с кнопкой для интернет-магазина
+    await ctx.reply('Заходи в наш интернет магазин по кнопке ниже', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Сделать заказ', web_app: { url: webAppUrl } }],
+            ],
+        },
+    });
+});
 
-    if(msg?.web_app_data?.data) {
+// Обработчик данных из WebApp
+bot.on('message', async (ctx) => {
+    const chatId = ctx.chat.id;
+
+    // Проверяем, есть ли данные из WebApp
+    if (ctx.message?.web_app_data?.data) {
         try {
-            const data = JSON.parse(msg?.web_app_data?.data)
-            console.log(data)
-            await bot.sendMessage(chatId, 'Спасибо за обратную связь!')
-            await bot.sendMessage(chatId, 'Ваша страна: ' + data?.country);
-            await bot.sendMessage(chatId, 'Ваша улица: ' + data?.street);
+            const data = JSON.parse(ctx.message.web_app_data.data);
+
+            console.log('Получены данные из WebApp:', data);
+
+            // Отправляем подтверждение пользователю
+            await ctx.reply('Спасибо за обратную связь!');
+            await ctx.reply(`Ваша страна: ${data.country}`);
+            await ctx.reply(`Ваша улица: ${data.street}`);
 
             setTimeout(async () => {
-                await bot.sendMessage(chatId, 'Всю информацию вы получите в этом чате');
-            }, 3000)
-        } catch (e) {
-            console.log(e);
+                await ctx.reply('Всю информацию вы получите в этом чате');
+            }, 3000);
+        } catch (error) {
+            console.error('Ошибка обработки данных из WebApp:', error);
+            await ctx.reply('Произошла ошибка при обработке данных.');
         }
     }
 });
 
+// Эндпоинт для обработки данных с WebApp
 app.post('/web-data', async (req, res) => {
-    console.log(req.body)
-    const {queryId, products = [], totalPrice} = req.body;
-    try {
-        // await bot.answerWebAppQuery(queryId, {
-        //     type: 'article',
-        //     id: queryId,
-        //     title: 'Успешная покупка',
-        //     input_message_content: {
-        //         message_text: ` Поздравляю с покупкой, вы приобрели товар на сумму ${totalPrice}, ${products.map(item => item.title).join(', ')}`
-        //     }
-        // })
-        console.log('success')
-        return res.status(200).json({queryId, products, totalPrice});
-    } catch (error) {
-        console.error('error', error)
-        return res.status(500).json({})
+    const { queryId, products = [], totalPrice } = req.body;
+
+    console.log('Получен запрос от клиента:', req.body);
+
+    if (!queryId) {
+        return res.status(400).json({ error: 'queryId отсутствует' });
     }
-})
 
+    try {
+        // Отправляем ответ пользователю через answerWebAppQuery
+        await bot.telegram.answerWebAppQuery(queryId, {
+            type: 'article',
+            id: queryId,
+            title: 'Успешная покупка',
+            input_message_content: {
+                message_text: `Поздравляю с покупкой, вы приобрели товар на сумму ${totalPrice}, ${products.map((item) => item.title).join(', ')}`,
+            },
+        });
+
+        console.log('Успешный ответ отправлен через answerWebAppQuery');
+        res.status(200).json({ queryId, products, totalPrice });
+    } catch (error) {
+        console.error('Ошибка при вызове answerWebAppQuery:', error);
+        res.status(500).json({});
+    }
+});
+
+// Запуск сервера Express
 const PORT = 8000;
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
 
-app.listen(PORT, () => console.log('server started on PORT ' + PORT))
+// Запуск бота Telegraf
+bot.launch().then(() => console.log('Бот успешно запущен!'));
+
+// Обработка завершения приложения
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
