@@ -73,6 +73,6 @@ app.post('/web-data', async (req, res) => {
 })
 
 const PORT = 8080
-app.listen(port, () => {
+app.listen(PORT, () => {
     console.log('server was started on port: ' + PORT)
 })
