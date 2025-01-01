@@ -9,6 +9,7 @@ const webAppUrl = 'https://tgminiappstoreapp.web.app'
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 bot.on('message', async (msg) => {
@@ -52,7 +53,6 @@ bot.on('message', async (msg) => {
 
 app.post('/web-data', async (req, res) => {
     console.log(req.body)
-    console.log(Object.create(req.body))
     const {queryId, products = [], totalPrice} = req.body;
     try {
         await bot.answerWebAppQuery(queryId, {
