@@ -1,78 +1,72 @@
-const TelegramBot = require('node-telegram-bot-api')
-const express = require('express')
-const cors = require('cors')
+const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
+const cors = require('cors');
 
-const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w'
+const token = '5336424335:AAGk0uyo0qqRCrKgvr2J7GrYKK1S0MF8878';
+const webAppUrl = 'https://ornate-selkie-c27577.netlify.app';
 
-const bot = new TelegramBot(token, { polling: true });
-const webUrl = 'https://tgminiappstoreapp.web.app'
+const bot = new TelegramBot(token, {polling: true});
+const app = express();
 
-const app = express()
-app.use(express.json())
-app.use(cors())
-const start =  () => {
-    bot.on('message', async (message) => {
-        const chatId = message.chat.id;
-        const text = message.text
-        if (text === '/start'){
-            await bot.sendMessage(chatId, 'Ниже появится кнопка для страницы', {
-                reply_markup: {
-                    keyboard: [
-                        [{text: 'Заполнить форму', web_app: {url: webUrl + '/form'}}]
-                    ]
-                }
-            })
+app.use(express.json());
+app.use(cors());
 
-            await bot.sendMessage(chatId, 'Ниже появится кнопка для формы', {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{text: 'Сделать заказ', web_app: {url: webUrl}}]
-                    ]
-                }
-            })
-        }
-        if (message.web_app_data?.data) {
-            console.log(message.web_app_data.data)
-            try {
-                const data = JSON.parse(message.web_app_data.data)
-                await bot.sendMessage(chatId, 'Ваши данные были приняты')
-                await bot.sendMessage(chatId, `Страна: ${data.country} | Улица: ${data.street}`)
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
-                setTimeout(async () => {
-                    await bot.sendMessage(chatId, 'Всю информацию вы получите в чате')
-                }, 1000)
-            } catch (error) {
-                console.log(error)
+    if(text === '/start') {
+        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполни форму', {
+            reply_markup: {
+                keyboard: [
+                    [{text: 'Заполнить форму', web_app: {url: webAppUrl + '/form'}}]
+                ]
             }
-        }
-    });
-}
+        })
 
-start()
+        await bot.sendMessage(chatId, 'Заходи в наш интернет магазин по кнопке ниже', {
+            reply_markup: {
+                inline_keyboard: [
+                    [{text: 'Сделать заказ', web_app: {url: webAppUrl}}]
+                ]
+            }
+        })
+    }
+
+    if(msg?.web_app_data?.data) {
+        try {
+            const data = JSON.parse(msg?.web_app_data?.data)
+            console.log(data)
+            await bot.sendMessage(chatId, 'Спасибо за обратную связь!')
+            await bot.sendMessage(chatId, 'Ваша страна: ' + data?.country);
+            await bot.sendMessage(chatId, 'Ваша улица: ' + data?.street);
+
+            setTimeout(async () => {
+                await bot.sendMessage(chatId, 'Всю информацию вы получите в этом чате');
+            }, 3000)
+        } catch (e) {
+            console.log(e);
+        }
+    }
+});
 
 app.post('/web-data', async (req, res) => {
-    const {queryId, products, totalPrice} = req.body
-    console.log(products)
+    const {queryId, products = [], totalPrice} = req.body;
     try {
         await bot.answerWebAppQuery(queryId, {
             type: 'article',
             id: queryId,
             title: 'Успешная покупка',
-            input_message_content: {message_text: `Поздравляю с сделкой, общая сумма товара ${totalPrice}`}
+            input_message_content: {
+                message_text: ` Поздравляю с покупкой, вы приобрели товар на сумму ${totalPrice}, ${products.map(item => item.title).join(', ')}`
+            }
         })
-        return res.status(200).json({})
-    } catch (error) {
-        await bot.answerWebAppQuery(queryId, {
-            type: 'article',
-            id: queryId,
-            title: 'Ошибка при покупке',
-            input_message_content: {message_text: `Не удавлось приобрести товар`}
-        })
+        return res.status(200).json({});
+    } catch (e) {
         return res.status(500).json({})
     }
 })
 
-const PORT = 8080
-app.listen(PORT, () => {
-    console.log('server was started on port: ' + PORT)
-})
+const PORT = 8000;
+
+app.listen(PORT, () => console.log('server started on PORT ' + PORT))
