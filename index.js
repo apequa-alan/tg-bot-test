@@ -65,8 +65,8 @@ app.post('/web-data', async (req, res) => {
         })
         console.log('success')
         return res.status(200).json({queryId, products, totalPrice});
-    } catch (e) {
-        console.error('error')
+    } catch (error) {
+        console.error('error', error)
         return res.status(500).json({})
     }
 })
