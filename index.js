@@ -5,7 +5,7 @@ const cors = require('cors');
 const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w'
 
 const bot = new TelegramBot(token, { polling: true });
-const webUrl = 'https://tgminiappstoreapp.web.app'
+const webAppUrl = 'https://tgminiappstoreapp.web.app'
 const app = express();
 
 app.use(express.json());
