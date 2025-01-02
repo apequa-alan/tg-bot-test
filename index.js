@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w';
-const webAppUrl = 'https://0854-46-22-62-58.ngrok-free.app';
+const webAppUrl = 'https://tgminiappstoreapp.web.app';
 
 const bot = new Telegraf(token);
 const app = express();
@@ -61,7 +61,10 @@ bot.on('message', async (ctx) => {
     }
 });
 
-// Эндпоинт для обработки данных с WebApp
+
+app.get('/data',async (req, res) => {
+    res.status(200).json({});
+})
 app.post('/web-data', async (req, res) => {
     const { queryId, products = [], totalPrice } = req.body;
 
