@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const token = '7718761845:AAFx6eWWCgeNfAC6FoxtRLkvl3yx6IUrM2w';
-const webAppUrl = 'https://tgminiappstoreapp.web.app';
+const webAppUrl = 'https://0854-46-22-62-58.ngrok-free.app';
 
 const bot = new Telegraf(token);
 const app = express();
