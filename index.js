@@ -63,6 +63,7 @@ bot.on('message', async (ctx) => {
 
 
 app.get('/data',async (req, res) => {
+    console.log(req.params)
     res.status(200).json({});
 })
 app.post('/web-data', async (req, res) => {
